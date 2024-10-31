@@ -1,0 +1,9 @@
+ultralytics
+torch
+numpy
+opencv-python
+pillow
+scikit-learn
+timm
+matplotlib
+seaborn
