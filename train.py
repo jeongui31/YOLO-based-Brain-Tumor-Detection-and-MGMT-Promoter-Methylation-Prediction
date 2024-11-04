@@ -27,6 +27,14 @@ def parse_args():
 
 # 데이터셋 클래스 정의
 class BrainDataset(Dataset):
+    """"뇌 이미지 데이터셋을 위한 커스텀 PyTorch Dataset 클래스
+
+        Args:
+            image_dir (str): 이미지 파일 경로
+            shape_dir (str): 평면 라벨 경로
+            label_dir (str): 이미지 라벨 경로
+            transform (callable, optional): 데이터 변환기
+        """
     def __init__(self, image_dir, shape_dir, label_dir, transform=None):
         self.image_dir = image_dir
         self.shape_dir = shape_dir
@@ -60,6 +68,15 @@ class BrainDataset(Dataset):
 
 # Transformer 모델 학습 함수 정의
 def train_vit_model(model, dataloader, dataset_size, device, num_epochs=25):
+    """ViT 모델 학습 함수
+    
+    Args:
+        model (nn.Module): 학습할 모델
+        dataloader (DataLoader): 데이터 로더
+        dataset_size (int): 데이터셋 크기
+        device (torch.device): 학습에 사용할 장치
+        num_epochs (int): 학습 에포크 수
+    """
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     
@@ -107,6 +124,7 @@ def train_vit_model(model, dataloader, dataset_size, device, num_epochs=25):
 
 # 평가 함수 정의
 def evaluate_model(model, dataloader, device):
+    """모델 성능 평가 함수"""
     model.eval()
     all_labels = []
     all_preds = []
@@ -124,6 +142,7 @@ def evaluate_model(model, dataloader, device):
 
 # YOLO 모델 학습 함수 정의
 def train_yolo_model(plane, dataset="vit_sorted", device="0", yolo_epochs=200):
+    """YOLO 모델 학습을 위한 함수"""
     yaml_file = YAML_FILES[plane][dataset]
     experiment_name = f"train/{plane}_{dataset}"
 
@@ -139,7 +158,7 @@ def train_yolo_model(plane, dataset="vit_sorted", device="0", yolo_epochs=200):
         save_conf=True
     )
 
-# 바운딩 박스 로드 및 저장 함수
+# YOLO 바운딩 박스 로드 함수
 def load_bboxes(label_file):
     bboxes = []
     with open(label_file, 'r') as f:
@@ -148,6 +167,7 @@ def load_bboxes(label_file):
             bboxes.append([x_center, y_center, width, height, int(class_id)])
     return bboxes
 
+# YOLO 바운딩 박스 저장 함수
 def save_yolo_bboxes(bboxes, file_path):
     with open(file_path, 'w') as f:
         for bbox in bboxes:
@@ -155,7 +175,7 @@ def save_yolo_bboxes(bboxes, file_path):
             x_center, y_center, width, height = bbox[:4]
             f.write(f'{class_id} {x_center} {y_center} {width} {height}\n')
 
-# 전처리 함수 정의
+# Axial 전처리 함수 정의
 def process_axial(image_path, label_path, output_image_path, output_label_path):
     image = cv2.imread(image_path)
     bboxes = load_bboxes(label_path)
@@ -168,11 +188,11 @@ def process_axial(image_path, label_path, output_image_path, output_label_path):
     save_yolo_bboxes(bboxes, output_label_path)
     return True
 
+# Coronal 전처리 함수 정의
 has_copied_coronal_images = False
 def process_coronal(image_path, label_path, output_image_path, output_label_path, ratio=0.05, seed=42):
-    global has_copied_coronal_images  # 복사 작업 확인을 위한 전역 변수
+    global has_copied_coronal_images  
 
-    # 이미지 전처리
     image = cv2.imread(image_path)
     if image is None:
         print(f"Could not read image: {image_path}")
@@ -192,10 +212,8 @@ def process_coronal(image_path, label_path, output_image_path, output_label_path
         img_hist_eq = cv2.equalizeHist(masked_img)
         img_hist_eq = img_hist_eq * (mask > 0) + cropped_gray * (mask == 0)
         
-        # 전처리된 이미지 저장
         cv2.imwrite(output_image_path, img_hist_eq)
 
-        # 바운딩 박스 변환 및 저장
         bboxes = load_bboxes(label_path)
         new_bboxes = []
 
@@ -211,7 +229,7 @@ def process_coronal(image_path, label_path, output_image_path, output_label_path
 
         save_yolo_bboxes(new_bboxes, output_label_path)
         
-        # 첫 번째 호출 시에만 5% 이미지 복사
+        # 첫 번째 호출 시에만 background 5% 이미지 복사
         if not has_copied_coronal_images:
             processed_folder = os.path.dirname(output_image_path)  # 이미지가 저장된 폴더
             random.seed(seed)
@@ -233,7 +251,7 @@ def process_coronal(image_path, label_path, output_image_path, output_label_path
         print(f"No contours found in image: {image_path}")
         return False
 
-
+# Sagittal 전처리 함수 정의
 def process_sagittal(image_path, label_path, output_image_path, output_label_path):
     image = cv2.imread(image_path)
     bboxes = load_bboxes(label_path)
@@ -246,6 +264,7 @@ def process_sagittal(image_path, label_path, output_image_path, output_label_pat
 
 # 데이터 분류 함수 정의
 def classify(vit_model, train_loader, test_loader, device, base_path):
+    """ViT 모델을 사용해 데이터셋을 평면별로 분류하는 함수"""
     vit_model.eval()
     class_map = {0: 'axial', 1: 'coronal', 2: 'sagittal'}
 
@@ -311,6 +330,7 @@ def classify(vit_model, train_loader, test_loader, device, base_path):
 
 # YOLO 모델 학습 함수 정의
 def train_yolo(base_path, yolo_epochs):
+    """정렬된 데이터를 이용해 YOLO 모델 학습"""
     shape_names = ['axial', 'coronal', 'sagittal']
 
     # 정렬된 데이터로 YOLO 모델 학습
@@ -320,7 +340,7 @@ def train_yolo(base_path, yolo_epochs):
 
 # 메인 함수
 def main():
-    # 인수 파싱
+    """main, 모델 학습 및 분류 작업 수행"""
     args = parse_args()
     
     prepare_experiment_dir("experiments/vit")
