@@ -22,4 +22,6 @@ YOLO 기반 뇌 종양 탐지와 MGMT 프로모터 메틸화 예측에 관한 �
   - `--split` : Dataset split for evaluation (default: val)
   - `--rect` : Enable rectangular evaluation mode
 
-  
+resources
+- [Ultralytics GitHub Repository](https://github.com/ultralytics/ultralytics), the official repository for Ultralytics YOLOv8, providing models, documentation, and support for YOLO-based object detection tasks.
+- [Brain Tumor Object Detection Dataset on Kaggle](https://www.kaggle.com/datasets/davidbroberts/brain-tumor-object-detection-datasets): Dataset used for training and evaluating brain tumor detection models, with labeled images across different anatomical planes.
