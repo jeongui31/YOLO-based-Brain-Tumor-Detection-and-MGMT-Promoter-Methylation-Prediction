@@ -1,5 +1,6 @@
 ultralytics
 torch
+torchvision
 numpy
 opencv-python
 pillow
@@ -7,3 +8,5 @@ scikit-learn
 timm
 matplotlib
 seaborn
+scipy
+pyyaml
